@@ -32,6 +32,7 @@ export default [
           patterns: ['@mui/*/*/*'],
         },
       ],
+      'no-extra-boolean-cast':0,
       'react-refresh/only-export-components': [
         'warn',
         { allowConstantExport: true },
