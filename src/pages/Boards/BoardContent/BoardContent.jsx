@@ -29,13 +29,11 @@ const ACTIVE_DRAG_ITEM_TYPE = {
 }
 
 
-function BoardContent({board 
-  ,createNewColumn ,  
-  createNewCard ,
+function BoardContent({board,
   moveColumns,
   moveCardInTheSameColumn,
   moveCardToDifferenceColumn,
-  deteleColumnDetails
+
 }) {
   
     //const pointerSensor =useSensor(PointerSensor,{activationConstraintP:{distance :10}})
@@ -248,10 +246,10 @@ function BoardContent({board
 
             // vị trí cũ (từ oldColumnWhenDraggingCard )
             const oldCardIndex = oldColumnWhenDraggingCard?.cards?.findIndex(c => c._id === activeDragItemId)
-            console.log('oldCardIndex :',oldCardIndex)
+            // console.log('oldCardIndex :',oldCardIndex)
             //vị trí mới (từ overColumn)
             const newCardIndex = overColumn?.cards?.findIndex(c => c._id === overCardId)
-            console.log('newCardIndex :',newCardIndex)
+            // console.log('newCardIndex :',newCardIndex)
             // arrayMove ở đây tương tư như logic kéo các column
             const  dndOrderedCards = arrayMove(oldColumnWhenDraggingCard?.cards,oldCardIndex,newCardIndex)
             //van goi update state o day de tranh delay hoac Flickering giao dien luc keo tha can phai cho goi api 
@@ -386,12 +384,7 @@ function BoardContent({board
                 height: (theme) => theme.trelloCustom.boardContentHeight,
                 p:'10px 0', 
             }}>
-            <ListColumns 
-            columns={orderedColumns}
-            createNewColumn ={createNewColumn}
-            createNewCard = {createNewCard}
-            deteleColumnDetails ={deteleColumnDetails}
-            />      
+            <ListColumns columns={orderedColumns} />      
             <DragOverlay dropAnimation={customDropAnimation}>
           {!activeDragItemIdType && null}
           {activeDragItemIdType === ACTIVE_DRAG_ITEM_TYPE.COLUMN && (
@@ -403,7 +396,7 @@ function BoardContent({board
         </DragOverlay>
         </Box>
         </DndContext>
-    );
+    )
 }
 
-export default BoardContent;
+export default BoardContent

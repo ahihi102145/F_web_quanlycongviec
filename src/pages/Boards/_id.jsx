@@ -2,121 +2,65 @@ import Container from '@mui/material/Container'
 import AppBar from '~/components/AppBar/AppBar'
 import BoardBar from './BoardBar/BoardBar'
 import BoardContent from './BoardContent/BoardContent'
-import CircularProgress from '@mui/material/CircularProgress'
-import { useEffect, useState } from 'react'
-import { fetchBoardDetailsAPI 
-        ,createNewColumnAPI
-        , createNewCardAPI 
-        ,updateBoardDetailsAPI,
+import { useEffect } from 'react'
+import { updateBoardDetailsAPI,
         moveCardToDifferenceColumnAPI,
-        deleteColumnDetailsAPI
+        updateColumnDetailsAPI
 } from '~/apis'
-import { mapOrder } from '~/utitls/sorts'
-import { generatePlaceholderCard } from '~/utitls/formatters'
-import { isEmpty } from 'lodash'
-import Box from '@mui/material/Box'
-import Typography from '@mui/material/Typography'
-import { toast } from 'react-toastify'
+import { cloneDeep } from 'lodash'
+import PageLoadingSpinner from '~/components/Loading/PageLoadingSpinner'
 //import { mockData } from '~/apis/moc-data'
+import {fetchBoardDetailsAPI, updateCurrentActiveBoard, selectCurrentActiveBoard} from '~/redux/activeBoard/activeBoardSlice'
+import {useDispatch, useSelector} from 'react-redux'
+import {useParams} from 'react-router-dom' 
+import ActiveCard from '~/components/Modal/ActiveCard/ActiveCard'
+import { selectCurrentActiveCard } from '~/redux/activeCard/activeCardSlice'
 
 function Board() {
-  const [board,  setBoard] =useState(null)
-
-  useEffect(() => {
-    const boardId = '6826ea8c05cc9cd3ed4412aa'
-    fetchBoardDetailsAPI(boardId).then(response => {
-      const board = response.board
-      //xắp sếp dữ liệu từ các column luôn ở đây trước khi đưa data xuống bên dưới các compoment con (vd 71)
-     board.columns = mapOrder(board.columns, board.columnOrderIds, '_id')
-    //
-      board.columns.forEach(column => {
-        //khi f5 web thì cần xử lý vấn đề kéo thả vào  1 column rỗng (37.2 & 69)
-        if (isEmpty(column.cards)) {
-          column.cards = [generatePlaceholderCard(column)]
-          column.cardOrderIds = [generatePlaceholderCard(column)._id] 
-
-          // const placeholder = generatePlaceholderCard(column)
-          // column.cards = [placeholder]
-          // column.cardOrderIds = [placeholder._id]
-
-        }else{
-           //xắp sếp dữ thứ tự các card  luôn ở đây trước khi đưa data xuống bên dưới các compoment con ( 71_bug quan trọng )
-          column.cards = mapOrder(column.cards,column.cardOrderIds,'_id')  
-        }
-      })
-      console.log( 'full board:',board);
-      setBoard(response.board)
-    })
-  }, [])
+  const dispatch = useDispatch()
+  // khong dùng state  của compoment  nữa mà chuyển  qua dùng state của redux
+  // const [board,  setBoard] =useState(null)
+  const board = useSelector (selectCurrentActiveBoard)
+  const activeCard = useSelector (selectCurrentActiveCard)
   
-  //func co nhiem vu goi api va lam lai data state board
-  const createNewColumn = async (newColumnData) => {
-
-    if (!board) return
-    const createdColumn = await createNewColumnAPI({
-      ...newColumnData,
-      boardId: board._id
-    })
-    //khi tao moi column khi do se chua co card  cần xử lý vấn đề kéo thả vào 1 column rỗng(vd 37.2 &69)
-    const placeholderCard = generatePlaceholderCard(createdColumn)
-    createdColumn.cards = [placeholderCard]
-    createdColumn.cardOrderIds = [placeholderCard._id]
-    
-    // Cập nhật lại state để hiện ra UI
-    // phia FE pk tự làm đúng lại state data board  thay vi goi lai api fetchBoardDetailsAPI
-    // cách này phụ thuộc vào tùy lựa chọn và đặc thù dự án , có nơi thi BE sẽ hỗ trợ trả về luôn toàn bộ board dù đây có là api tạp column hay card
-    const newBoard = {...board}
-    newBoard.columns.push(createdColumn)
-    newBoard.columnOrderIds.push(createdColumn._id)
-    setBoard(newBoard)
-  }
   
-  //func co nhiem vu goi api va lam lai data state board
-  const  createNewCard = async (newCardData) =>{
-    const createdCard = await createNewCardAPI({
-      ...newCardData,
-      boardId : board._id
-    })
-   
-    //cap nhat lai state board
-    //phia FE phai tu lam dung lai board thay vi goi lai api fetchBoardDetailsAPI
-    const newBoard = { ...board }
-    const columnToUpdate = newBoard.columns.find(column => column._id === createdCard.columnId)
-   if(columnToUpdate){
-      // nếu column rỗng : chứa 1 cái placeholder-card 
-     if(columnToUpdate.cards.some(card =>card.FE_PlaceholerCard)){
-        columnToUpdate.cards= [createdCard]
-        columnToUpdate.cardOrderIds= [createdCard._id]
-
-      }else{
-        // nguoc lai column da co data thi push vao cuoi mang
-      columnToUpdate.cards.push(createdCard)
-      columnToUpdate.cardOrderIds.push(createdCard._id)
-      }
-    }
-   console.log('columnToUpdate:',columnToUpdate);
-    setBoard(newBoard)
+  const {boardId}=useParams()
  
-  }
+  useEffect(() => {
+    // const boardId = '6831ca2593aa999984c9f125'
+    //call api
+    dispatch(fetchBoardDetailsAPI(boardId))
+
+  }, [dispatch , boardId])
+   
 
   //func co nhiem vu goi api va xu ly keo tha song suoi
   //chi can goi api de cap nhat mang columnOrderIds cua column chua no(thay doi vi tri trong mang)
   const moveColumns = (dndOrderedColumns) =>{
+     //update cho phan du lieu state board
     const  dndOrderedColumnsIds = dndOrderedColumns.map(c => c._id) // o day cap nhat columnOrderIds de cap nhat vi tri
-    //update cho phan du lieu state board
+    /*
+    truong hop  dùng Spread Operator thì lại không sao bởi vì ở đây chúng ta không dùng push như ở trên làm thay đổi trực tiếp  kiểu mở rộng mảng,
+    mà chỉ gán lại toàn bộ giá trị columns và columnOrderIds bằng  2 mảng mới.Tương tự như cách làm concat ở trường hợp createNewColumn thôi
+    */
     const newBoard = {...board}
     newBoard.columns = dndOrderedColumns
     newBoard.columnOrderIds=dndOrderedColumnsIds
-    setBoard(newBoard)
+    dispatch(updateCurrentActiveBoard(newBoard))
 
     //goi api update board
      updateBoardDetailsAPI(newBoard._id , {columnOrderIds: newBoard.columnOrderIds })
   } 
   // khi  di chuyen card trong cung column
    //chi can goi api de cap nhat mang cardOrderIds cua column chua no(thay doi vi tri trong mang)
-  const moveCardInTheSameColumn = (dndOrderedCards,dndOrderedCardIds, columnId) =>{
+const moveCardInTheSameColumn = (dndOrderedCards,dndOrderedCardIds, columnId) =>{
       //update cho phan du lieu state board
-      const newBoard = {...board}
+      // const newBoard = {...board}
+      /*
+      -cannot assign to read only property 'card' of object
+      -trường hợp imutability ở đây , đã đụng tới giá trị card đang được coi  là chỉ đọc read only - (nested)
+      */
+      const newBoard = cloneDeep(board)
       const columnToUpdate = newBoard.columns.find(column => column._id === columnId)
     //tao o dau tim dung column do
     if(columnToUpdate) {
@@ -124,11 +68,11 @@ function Board() {
       columnToUpdate.cardOrderIds = dndOrderedCardIds
     }
    
-    setBoard(newBoard)
+    dispatch(updateCurrentActiveBoard(newBoard))
     
     //goi api update column
-    moveCardToDifferenceColumnAPI(columnId, {cardOrderIds :dndOrderedCardIds })
-  }
+    updateColumnDetailsAPI(columnId, {cardOrderIds :dndOrderedCardIds })
+}
 
   /**
  * Xử lý khi kéo thả Card sang một Column khác:
@@ -142,13 +86,13 @@ function Board() {
  */
 
   const  moveCardToDifferenceColumn = (currentCardId, prevColumnId , nextColumnId , dndOrderedColumns) => {
-    
+     //update cho phan du lieu state board
     const  dndOrderedColumnsIds = dndOrderedColumns.map(c => c._id)
-    //update cho phan du lieu state board
+   // tương tự đoạn xử lý func moveColumns lên k ảnh hưởng Redux toolkit Imutability gì ở đây cả 
     const newBoard = {...board}
     newBoard.columns = dndOrderedColumns
     newBoard.columnOrderIds=dndOrderedColumnsIds
-    setBoard(newBoard)
+    dispatch(updateCurrentActiveBoard(newBoard))
     
     //goi api xu ly phia be
 
@@ -195,49 +139,28 @@ function Board() {
 
   }
   
-  // xử lý xóa 1 column và card bên trong nó 
-  const  deteleColumnDetails = (columnId) => {
-   //update cho chuan du lieu state board
-     const newBoard = {...board}
-    newBoard.columns = newBoard.columns.filter(c => c._id !== columnId ) // dieu kien loc la loai bo cac co column co id duoc xoa
-    newBoard.columnOrderIds=newBoard.columnOrderIds.filter(_id =>_id !== columnId )
-    setBoard(newBoard)
-
-   //goi api xu ly BE 
-    deleteColumnDetailsAPI(columnId).then(res => {
-      toast.success(res?.result?.deleteResult)
-    })
-  }
-
+  
   if (!board){
-    return (
-      <Box sx={{ 
-        display: 'flex',
-        alignItems:'center',
-        justifyContent:'center',
-        gap:2,
-        width:'100vw',
-        height:'100vh'
-      }}>
-      <CircularProgress />
-      <Typography>Loading...</Typography>
-    </Box>
-    )
-  }
+    return <PageLoadingSpinner caption ="Loading Board..." />
+    }
     return (
        
           <Container disableGutters maxWidth={false} sx={{ height: '100vh' }}>
+            {/* Modal acticecard ,check đóng mở dựa theo điều kiện tồn tai data activeCard lưu trong Redux hay k thì moiw render
+            Mỗi thời điểm chỉ tồn tại 1 cái modal đang activeCard */}
+           {activeCard && <ActiveCard/>}
+           
+            
+            {/* các thành phần còn lại của board details */}
            <AppBar/>
             <BoardBar board ={board}/>
             <BoardContent 
             board ={board}
-             
-            createNewColumn ={createNewColumn}
-            createNewCard = {createNewCard}
+
             moveColumns ={moveColumns}
             moveCardInTheSameColumn={moveCardInTheSameColumn}
             moveCardToDifferenceColumn ={moveCardToDifferenceColumn}
-            deteleColumnDetails ={deteleColumnDetails}
+           
             />
           </Container>
       )

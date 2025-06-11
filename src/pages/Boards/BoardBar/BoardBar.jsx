@@ -5,13 +5,11 @@ import VpnLockIcon from '@mui/icons-material/VpnLock'
 import AddToDriveIcon from '@mui/icons-material/AddToDrive'
 import BoltIcon from '@mui/icons-material/Bolt'
 import FilterListIcon from '@mui/icons-material/FilterList'
-import Avatar from '@mui/material/Avatar'
-import AvatarGroup from '@mui/material/AvatarGroup'
 import Tooltip from '@mui/material/Tooltip'
 import Button from '@mui/material/Button'
 import PersonAddIcon from '@mui/icons-material/PersonAdd'
 import { capitalizeFirstLetter } from '~/utitls/formatters'
-
+import BoardUserGroup from './BoardUserGroup'
 
 const MENU_STYLES = {
   color: 'white',
@@ -66,27 +64,11 @@ function BoardBar({board}) {
           '&:hover':{borderColor:'white'}
         }}
         >
-            Invite</Button>
-      <AvatarGroup max={7}
-      sx={{
-        gap:'10px',
-        '& .MuiAvatar-root': {
-          width: 34,
-          height: 34,
-          fontSize: 16, 
-          border:'none',
-          color:'white',
-          cursor:'pointer',
-          '&:first-of-style':{bgcolor:'#a4b0b9'}
-        }
-      }}
-      >
-      <Tooltip title="Ttel">
-          <Avatar alt="Ttel"
-            src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAOEAAADhCAMAAAAJbSJIAAAA2FBMVEX////ycigksksV..."
-          />
-        </Tooltip>
-      </AvatarGroup>
+            Invite
+          </Button>
+          
+       {/* { xu ly hien thi danh sach thanh vien cua board} */}
+        <BoardUserGroup boardUsers={board?.FE_allUsers}/>
       </Box>
     </Box>
   )

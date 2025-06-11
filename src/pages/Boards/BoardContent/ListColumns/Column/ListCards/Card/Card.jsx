@@ -5,8 +5,14 @@ import AttachmentIcon from '@mui/icons-material/Attachment'
 
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+
+import {useDispatch} from 'react-redux'
+import { updateCurrentActiveCard } from '~/redux/activeCard/activeCardSlice'
+
 function Card ( {card}){
-    if (!card) return null; 
+    const dispatch = useDispatch()
+
+    if (!card) return null
     const { attributes, listeners, setNodeRef, transform, transition ,isDragging} = useSortable({
         id: card._id,
         data: { ...card }
@@ -17,11 +23,21 @@ function Card ( {card}){
         opacity: isDragging ? 0.5 :undefined,
         border: isDragging ? '1px solid #2ecc71' :undefined
       }     
-        const shouldShowCardAction = ()=>{
+    const shouldShowCardAction = ()=>{
             return !!card?.memberIds?.length || !!card?.comments?.length ||!!card?.attachments?.length
-        }
+    }
+
+   
+    const setActiveCard = () => {
+         //cap nhat data cho activeCard trong Redux
+        dispatch(updateCurrentActiveCard(card))
+        
+    }
+
+
         return (
             <MuiCard
+                onClick ={setActiveCard}
                 ref={setNodeRef}style={dndKitCardStyle}{...attributes} {...listeners}
                 sx={(theme) => ({
                     cursor: 'pointer',

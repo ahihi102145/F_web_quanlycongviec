@@ -23,13 +23,23 @@ import TextField from '@mui/material/TextField'
 import CloseIcon from '@mui/icons-material/Close'
 import { toast } from 'react-toastify'
 import { useConfirm } from "material-ui-confirm"
+import {useDispatch, useSelector} from 'react-redux'
+import { createNewCardAPI,  deleteColumnDetailsAPI , updateColumnDetailsAPI } from '~/apis'
+import {updateCurrentActiveBoard, selectCurrentActiveBoard} from '~/redux/activeBoard/activeBoardSlice'
+import { cloneDeep } from 'lodash'
+import ToggleFocusInput from '~/components/Form/ToggleFocusInput'
 
-function Column ({column , createNewCard ,deteleColumnDetails }) {
+
+
+function Column ({column }) {
+     const dispatch = useDispatch()
+    const board = useSelector (selectCurrentActiveBoard)
+
     const {
         attributes,listeners,setNodeRef,transform,transition , isDragging} = useSortable({
         id: column._id,
         data:{ ...column}    
-    });
+    })
         
       const dndKitColumnStyle = {
         //nếu sd Tranfrom như docs sẽ lỗi kiểu strech
@@ -42,32 +52,52 @@ function Column ({column , createNewCard ,deteleColumnDetails }) {
 
 
     const [anchorEl, setAnchorEl] = useState(null);
-        const open = Boolean(anchorEl);
-        const handleClick = (event) => {
-        setAnchorEl(event.currentTarget);
-    }
-        const handleClose = () => {setAnchorEl(null);}
+    const open = Boolean(anchorEl);
+    const handleClick = (event) => {setAnchorEl(event.currentTarget); }
+    const handleClose = () => {setAnchorEl(null);}
         // card đã đc sx ở compoment cha cao nhất(71)
-        const orderedCards =(column.cards)  
+    const orderedCards =(column.cards)  
 
-        const [openNewCardForm , setOpenNewColumnForm] = useState(false)
-        const toggleOpenNewCardForm = () => setOpenNewColumnForm(!openNewCardForm)
+    const [openNewCardForm , setOpenNewColumnForm] = useState(false)
+    const toggleOpenNewCardForm = () => setOpenNewColumnForm(!openNewCardForm)
       
-        const [newCardTitle , setNewCardTitle] = useState('')
+    const [newCardTitle , setNewCardTitle] = useState('')
       
-        const addNewCard=   () =>{
+    const addNewCard=  async () =>{
           if(!newCardTitle){
             toast.error('Please enter Card Title', {position: "bottom-right"})
             return  
           }
           
         //tao data de goi api
-        const newCardData = {
-            title :newCardTitle,
-            columnId :column._id
-        }  
-          // goi api
-         createNewCard(newCardData)
+    const newCardData = {title :newCardTitle, columnId :column._id }  
+       
+// func có nhiệm vụ gọi api tạo mới card  và  làm lại  dữ liệu state board 
+    const createdCard = await createNewCardAPI({
+      ...newCardData,
+      boardId : board._id
+  })
+    //cap nhat lai state board
+    //phia FE phai tu lam dung lai board thay vi goi lai api fetchBoardDetailsAPI
+    // tương tự fuc createNewColumn nên chỗ này cx dùng cloneDeep
+    const newBoard = cloneDeep(board)
+    const columnToUpdate = newBoard.columns.find(column => column._id === createdCard.columnId)
+   if(columnToUpdate){
+      // nếu column rỗng : chứa 1 cái placeholder-card 
+     if(columnToUpdate.cards.some(card =>card.FE_PlaceholerCard)){
+        columnToUpdate.cards= [createdCard]
+        columnToUpdate.cardOrderIds= [createdCard._id]
+
+      }else{
+        // nguoc lai column da co data thi push vao cuoi mang
+      columnToUpdate.cards.push(createdCard)
+      columnToUpdate.cardOrderIds.push(createdCard._id)
+      }
+    }
+  //  console.log('columnToUpdate:',columnToUpdate);
+    dispatch(updateCurrentActiveBoard(newBoard))
+     
+
           // dong lai trang thai them column moi & clear input
           toggleOpenNewCardForm()
           setNewCardTitle('')
@@ -89,11 +119,37 @@ const handleDeleteColumn = () =>{
         // description:'phai nhap chu vector moi duoc confirm',
         // confirmationKeyword:'vector'
     }).then(() => {
-        deteleColumnDetails(column._id)
+    //update cho chuan du lieu state board
+     const newBoard = {...board}
+     // tương tự đoạn xử lý func moveColumns lên k ảnh hưởng Redux toolkit Imutability gì ở đây cả 
+    newBoard.columns = newBoard.columns.filter(c => c._id !== column._id ) // dieu kien loc la loai bo cac co column co id duoc xoa
+    newBoard.columnOrderIds=newBoard.columnOrderIds.filter(_id =>_id !== column._id )
+    dispatch(updateCurrentActiveBoard(newBoard))
+
+   //goi api xu ly BE 
+    deleteColumnDetailsAPI(column._id).then(res => {
+      toast.success(res?.result?.deleteResult)
+    })
     }).catch(()=>{})
    
    
 }
+
+const onUpdateColumnTitle = (newTitle) =>{
+    console.log(newTitle)
+    //goi api update column va xu lu lieu board trong redux 
+    updateColumnDetailsAPI(column._id, {title:newTitle}).then(() =>{
+        const newBoard = cloneDeep(board)
+        const columnToUpdate = newBoard.columns.find(c => column._id === c._id)
+        //tao o dau tim dung column do
+        if(columnToUpdate) {
+        columnToUpdate.title = newTitle
+        }
+    
+        dispatch(updateCurrentActiveBoard(newBoard))
+    })
+}
+
 
 // bọc div ở đây để chiều cao của column khi kéo thả sẽ có bug flickering
     return (
@@ -118,13 +174,18 @@ const handleDeleteColumn = () =>{
                         alignItems: 'center',
                         justifyContent: 'space-between',
                     }}>
-                        <Typography variant="h6" sx={{
+                        {/* <Typography variant="h6" sx={{
                             fontSize:'1rem',
                             fontWeight:'bold',
                             cursor:'pointer'
                         }}>
                         {column?.title}
-                        </Typography>
+                        </Typography> */}
+                        <ToggleFocusInput 
+                        value={column?.title} 
+                        onChangedValue= {onUpdateColumnTitle}
+                        data-no-dnd="true"
+                        />
                         <Box>
             <Tooltip title='More options'>       
                 <ExpandMoreIcon
@@ -235,6 +296,7 @@ const handleDeleteColumn = () =>{
             />   
             <Box sx= {{display:'flex' , alignItems:'center', gap :2}}>
               <Button 
+               className="interceptor-loading"
               onClick={addNewCard}
               variant="contained" color="success" size="small"
               sx={(theme) => ({

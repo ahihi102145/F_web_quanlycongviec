@@ -20,6 +20,9 @@ import LibraryAddIcon from '@mui/icons-material/LibraryAdd'
 import InputAdornment from '@mui/material/InputAdornment'
 import SearchIcon from '@mui/icons-material/Search'
 import CloseIcon from '@mui/icons-material/Close'
+import { Link } from 'react-router-dom'
+
+
 function AppBar() {
     const [searchValue , setSearchValue]=useState('')
     return (
@@ -38,13 +41,19 @@ function AppBar() {
         >
             
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <AppsIcon sx={{ color:'white' }} />
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <SvgIcon component={TrelloIcon} fontSize="small" inheritViewBox sx={{ color:'white' }} />
-                    <Typography component="span" variant="body1" sx={{ fontSize: '1.2rem', fontWeight: 'bold', color:'white' }}>
-                        Ttel
-                    </Typography>
-                </Box>
+                <Link to="/boards">
+                 <Tooltip title="Board List">  
+                    <AppsIcon sx={{ color:'white', verticalAlign:'middle' }} />
+                </Tooltip>
+                </Link>
+                <Link to ="/"> 
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        <SvgIcon component={TrelloIcon} fontSize="small" inheritViewBox sx={{ color:'white' }} />
+                        <Typography component="span" variant="body1" sx={{ fontSize: '1.2rem', fontWeight: 'bold', color:'white' }}>
+                            Ftel
+                        </Typography>
+                    </Box>
+                </Link>
             </Box>
 
             {/* Phần Workspaces và Recent */}
