@@ -82,4 +82,9 @@ export const updateCardDetailsAPI = async (cardId, updateData) =>{
     const reponse = await authorizeAxiosInstance.put(`${API_ROOT}/v1/cards/${cardId}` ,updateData)
     return reponse.data
 } 
-
+//11/6
+export const inviteUserToBoardAPI = async (data) =>{
+  const reponse = await authorizeAxiosInstance.post(`${API_ROOT}/v1/invitations/board/` ,data)
+  toast.success('User invited to board succesfully')
+  return reponse.data
+} 

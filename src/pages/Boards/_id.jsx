@@ -14,14 +14,14 @@ import {fetchBoardDetailsAPI, updateCurrentActiveBoard, selectCurrentActiveBoard
 import {useDispatch, useSelector} from 'react-redux'
 import {useParams} from 'react-router-dom' 
 import ActiveCard from '~/components/Modal/ActiveCard/ActiveCard'
-import { selectCurrentActiveCard } from '~/redux/activeCard/activeCardSlice'
+
 
 function Board() {
   const dispatch = useDispatch()
   // khong dùng state  của compoment  nữa mà chuyển  qua dùng state của redux
   // const [board,  setBoard] =useState(null)
   const board = useSelector (selectCurrentActiveBoard)
-  const activeCard = useSelector (selectCurrentActiveCard)
+
   
   
   const {boardId}=useParams()
@@ -132,7 +132,7 @@ const moveCardInTheSameColumn = (dndOrderedCards,dndOrderedCardIds, columnId) =>
     moveCardToDifferenceColumnAPI({
       currentCardId, 
       prevColumnId,
-      prevCardOrderIds ,
+      prevCardOrderIds ,  
       nextColumnId,
       nextCardOrderIds 
     })
@@ -146,9 +146,10 @@ const moveCardInTheSameColumn = (dndOrderedCards,dndOrderedCardIds, columnId) =>
     return (
        
           <Container disableGutters maxWidth={false} sx={{ height: '100vh' }}>
-            {/* Modal acticecard ,check đóng mở dựa theo điều kiện tồn tai data activeCard lưu trong Redux hay k thì moiw render
+            {/* Modal acticecard ,check đóng mở dựa theo state isShowModalActiveCard lưu trong Redux 
             Mỗi thời điểm chỉ tồn tại 1 cái modal đang activeCard */}
-           {activeCard && <ActiveCard/>}
+
+           <ActiveCard/>
            
             
             {/* các thành phần còn lại của board details */}
